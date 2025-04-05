@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default function HomePage() {
   return (
@@ -10,9 +10,7 @@ export default function HomePage() {
       <header className="bg-white shadow-sm">
         <div className="container mx-auto py-4 px-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">
-              FreeTool Service Backend
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900">FreeTool Service Backend</h1>
             <div>
               <Link href="/admin/login">
                 <Button variant="outline">Admin Login</Button>
@@ -33,7 +31,7 @@ export default function HomePage() {
                 <div className="h-3 w-3 rounded-full bg-green-500"></div>
                 <p className="text-green-700 font-medium">All systems operational</p>
               </div>
-              
+
               <div className="mt-6 space-y-4">
                 <div className="flex justify-between py-2 border-b">
                   <span className="font-medium">API Service</span>
@@ -64,11 +62,11 @@ export default function HomePage() {
                 <div className="space-y-2">
                   <h3 className="font-medium">HEIC Converter Service</h3>
                   <p className="text-sm text-gray-600">
-                    Backend service for processing HEIC image conversions to various formats
-                    including JPG, PNG, WEBP, and PDF.
+                    Backend service for processing HEIC image conversions to various formats including JPG, PNG, WEBP,
+                    and PDF.
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h3 className="font-medium">Supported Features</h3>
                   <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
@@ -90,20 +88,26 @@ export default function HomePage() {
                 <div className="space-y-2">
                   <h3 className="font-medium">API Endpoints</h3>
                   <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    <li><code>/api/heic-converter</code> - HEIC conversion endpoint</li>
-                    <li><code>/api/jobs/status</code> - Job status endpoint</li>
-                    <li><code>/api/files/[path]</code> - File download endpoint</li>
+                    <li>
+                      <code>/api/heic-converter</code> - HEIC conversion endpoint
+                    </li>
+                    <li>
+                      <code>/api/jobs/status</code> - Job status endpoint
+                    </li>
+                    <li>
+                      <code>/api/files/[path]</code> - File download endpoint
+                    </li>
                   </ul>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h3 className="font-medium">Authentication</h3>
                   <p className="text-sm text-gray-600">
-                    All API endpoints require JWT authentication. Tokens are issued securely
-                    and validated for each request.
+                    All API endpoints require JWT authentication. Tokens are issued securely and validated for each
+                    request.
                   </p>
                 </div>
-                
+
                 <div className="pt-4">
                   <Button variant="outline" className="w-full">
                     View Full Documentation
@@ -123,5 +127,6 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
-  );
+  )
 }
+

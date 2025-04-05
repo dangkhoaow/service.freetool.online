@@ -4,7 +4,13 @@ require('ts-node').register({
   compilerOptions: {
     module: 'commonjs',
     target: 'es2017',
-    esModuleInterop: true
+    esModuleInterop: true,
+    moduleResolution: 'node',
+    allowJs: true,
+    baseUrl: '.',
+    paths: {
+      '@/*': ['./*']
+    }
   }
 });
 
@@ -13,6 +19,7 @@ const { parse } = require('url');
 const next = require('next');
 const path = require('path');
 const fs = require('fs');
+const cors = require('cors');
 
 // Import the Express API server
 const apiServer = require('./api-server');
@@ -22,7 +29,7 @@ const websocketServer = require('./lib/websocket/websocket-server');
 const queueManager = require('./lib/queue/queue-manager');
 
 // Ensure upload directories exist
-const uploadDir = path.join(__dirname, 'uploads/temp');
+const uploadDir = path.join(__dirname, './uploads/temp');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -41,36 +48,41 @@ app.prepare().then(() => {
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
     
-    // If it's an API request, let the Express API server handle it
-    if (req.url.startsWith('/api/')) {
-      apiServer(req, res);
-      return;
-    }
-
-    // Otherwise, let Next.js handle it
-    handle(req, res, parsedUrl);
+    // Apply CORS middleware
+    cors({
+      origin: ['http://localhost:3000', 'http://localhost:3001', 'https://freetool.online'],
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'adminToken']
+    })(req, res, () => {
+      // Let Next.js handle all requests, including API routes
+      handle(req, res, parsedUrl);
+    });
   });
 
   // Initialize WebSocket server
   const io = websocketServer.initWebSocketServer(server);
   console.log('WebSocket server initialized');
 
-  // Start the server
-  server.listen(port, (err) => {
-    if (err) throw err;
+  server.listen(port, () => {
     console.log(`> Ready on http://localhost:${port}`);
   });
 
   // Handle graceful shutdown
-  const shutdown = () => {
-    console.log('Shutting down server...');
+  function shutdown() {
+    console.log('Server is shutting down...');
     
-    // Close the server
+    // Close WebSocket server
+    if (io) {
+      io.close();
+      console.log('WebSocket server closed');
+    }
+
+    // Close server
     server.close(() => {
-      console.log('Server closed');
-      process.exit(0);
+      console.log('HTTP server closed');
     });
-  };
+  }
 
   // Listen for termination signals
   process.on('SIGTERM', shutdown);

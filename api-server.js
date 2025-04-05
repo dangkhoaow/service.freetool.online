@@ -71,7 +71,7 @@ if (!fs.existsSync(convertedDir)) {
 }
 
 // Serve files from uploads directory
-app.use('/api/files', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/heic-converter/files', express.static(path.join(__dirname, 'uploads')));
 
 // HEIC Converter API endpoint
 app.post('/api/heic-converter', upload.array('files', 20), async (req, res) => {
@@ -133,7 +133,7 @@ app.post('/api/heic-converter', upload.array('files', 20), async (req, res) => {
 });
 
 // Get job status endpoint
-app.get('/api/jobs/status/:jobId', async (req, res) => {
+app.get('/api/heic-converter/jobs/status/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
     console.log(`Received job status request for job ID: ${jobId}`);
@@ -163,51 +163,8 @@ app.get('/api/jobs/status/:jobId', async (req, res) => {
   }
 });
 
-// For testing purposes - create a test job on server startup
-// This way we have at least one job in the system for testing
-app.get('/api/jobs/test-job', async (req, res) => {
-  try {
-    const jobId = 'test-job-' + Date.now();
-    console.log(`Creating test job with ID: ${jobId}`);
-    
-    // Add job to the queue
-    await addJob({
-      jobId,
-      userId: 'test-user',
-      files: [
-        {
-          originalName: 'test1.heic',
-          convertedName: 'test1.jpg',
-          convertedPath: 'temp/test1.jpg',
-          size: 1024,
-          status: 'completed'
-        },
-        {
-          originalName: 'test2.heic',
-          convertedName: 'test2.jpg',
-          convertedPath: 'temp/test2.jpg',
-          size: 2048,
-          status: 'completed'
-        }
-      ],
-      outputFormat: 'jpg',
-      quality: 80,
-      pdfOptions: {
-        pageSize: 'a4',
-        orientation: 'portrait'
-      },
-      priority: 1
-    });
-    
-    res.status(200).json({ success: true, jobId, message: 'Test job created' });
-  } catch (error) {
-    console.error('Error creating test job:', error);
-    res.status(500).json({ error: 'Failed to create test job' });
-  }
-});
-
 // ZIP download endpoint
-app.get('/api/files/download-zip/:jobId', async (req, res) => {
+app.get('/api/heic-converter/files/download-zip/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
     console.log(`Received ZIP download request for job: ${jobId}`);
@@ -290,7 +247,7 @@ app.get('/api/files/download-zip/:jobId', async (req, res) => {
 });
 
 // File download endpoint - this should be AFTER the download-zip endpoint to avoid route conflicts
-app.get('/api/files/:filePath(*)', (req, res) => {
+app.get('/api/heic-converter/files/:filePath+', (req, res) => {
   try {
     const { filePath } = req.params;
     console.log(`Received file download request for: ${filePath}`);
