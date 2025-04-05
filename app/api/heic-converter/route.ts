@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addJob } from '../../../lib/queue/queue-manager';
 import { v4 as uuidv4 } from 'uuid';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs/promises';
+import fsSync from 'fs';
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: path.join(process.cwd(), 'uploads/temp'),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+    files: 20 // Maximum 20 files
+  }
+});
 
 // CORS headers helper function
 function setCorsHeaders(response: NextResponse) {
   response.headers.set('Access-Control-Allow-Credentials', 'true');
-  response.headers.set('Access-Control-Allow-Origin', '*'); // For development
+  response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3000'); // For development
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
   return response;
@@ -22,16 +35,29 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('=== HEIC Converter API POST Request ===');
+    console.log('Request headers:', req.headers);
+    
     // For testing purposes, we'll skip authentication
     // Just extract the user ID from the token if available
     const token = req.headers.get('authorization')?.split(' ')[1] || 'user_test';
     const userId = token.startsWith('user_') ? token.substring(5) : 'anonymous';
+    console.log('Authenticated user:', userId);
 
-    // Get form data (simplified for testing)
+    // Parse the form data
     const formData = await req.formData();
+    console.log('Raw form data:', formData);
+    
     const files = formData.getAll('files') as File[];
+    console.log('Files received:', files.map(f => ({
+      name: f.name,
+      size: f.size,
+      type: f.type,
+      lastModified: f.lastModified
+    })));
     
     if (!files || files.length === 0) {
+      console.error('No files uploaded');
       const response = NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
       return setCorsHeaders(response);
     }
@@ -42,7 +68,14 @@ export async function POST(req: NextRequest) {
       return name.endsWith('.heic') || name.endsWith('.heif') || true; // Accept all files for testing
     });
 
+    console.log('Valid files:', validFiles.map(f => ({
+      name: f.name,
+      size: f.size,
+      type: f.type
+    })));
+
     if (validFiles.length === 0) {
+      console.error('No valid HEIC/HEIF files found');
       const response = NextResponse.json({ error: 'No valid HEIC/HEIF files found' }, { status: 400 });
       return setCorsHeaders(response);
     }
@@ -55,14 +88,54 @@ export async function POST(req: NextRequest) {
       orientation: 'portrait'
     };
 
+    console.log('Conversion parameters:', {
+      outputFormat,
+      quality,
+      pdfOptions
+    });
+
     // Generate a unique job ID
     const jobId = uuidv4();
+    console.log('Generated job ID:', jobId);
 
     // Set priority (simplified for testing)
     const priority = 1;
 
+    // Save files to the correct directory
+    const uploadDir = path.join(process.cwd(), 'uploads/temp');
+    console.log('Upload directory:', uploadDir);
+    
+    // Ensure the directory exists
+    if (!fsSync.existsSync(uploadDir)) {
+      console.log('Creating uploads/temp directory');
+      fsSync.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Save files with their original names
+    for (const file of validFiles) {
+      const filePath = path.join(uploadDir, file.name);
+      console.log('Saving file to:', filePath);
+      
+      // Read the file content
+      const fileBuffer = await file.arrayBuffer();
+      const fileContent = Buffer.from(fileBuffer);
+      
+      // Write to disk
+      await fs.writeFile(filePath, fileContent);
+      
+      // Verify file was written
+      const stats = fsSync.statSync(filePath);
+      console.log(`File ${file.name} saved successfully. Size: ${stats.size} bytes`);
+    }
+
     // Add job to the queue
-    // Add job with simplified parameters
+    console.log('Adding job to queue with files:', validFiles.map(f => ({
+      name: f.name,
+      size: f.size,
+      type: f.type,
+      lastModified: f.lastModified
+    })));
+
     await addJob({
       jobId,
       userId,
@@ -70,7 +143,8 @@ export async function POST(req: NextRequest) {
         name: file.name,
         size: file.size,
         type: file.type,
-        lastModified: file.lastModified
+        lastModified: file.lastModified,
+        path: path.join('uploads/temp', file.name) // Save relative path
       })),
       outputFormat,
       quality,
@@ -78,12 +152,15 @@ export async function POST(req: NextRequest) {
       priority
     });
 
-    return NextResponse.json({
+    console.log('Job added to queue successfully');
+
+    const response = NextResponse.json({
       success: true,
       jobId,
       message: 'Conversion job added to queue',
       filesCount: validFiles.length
     });
+    return setCorsHeaders(response);
   } catch (error) {
     console.error('Error in HEIC conversion API:', error);
     const response = NextResponse.json(
@@ -99,31 +176,30 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
   try {
-    // For testing purposes, we'll skip authentication
-
-    // Get job ID from query parameters
+    console.log('=== HEIC Converter API GET Request ===');
     const { searchParams } = new URL(req.url);
     const jobId = searchParams.get('jobId');
 
     if (!jobId) {
-      const response = NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
-      return setCorsHeaders(response);
+      console.error('No job ID provided');
+      return NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
     }
 
-    // Get job status from queue
+    console.log('Checking status for job ID:', jobId);
     const status = await getJobStatus(jobId);
 
     if (!status) {
-      const response = NextResponse.json({ error: 'Job not found' }, { status: 404 });
-      return setCorsHeaders(response);
+      console.error('Job not found:', jobId);
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
-    const response = NextResponse.json({ status });
+    console.log('Job status:', status);
+    const response = NextResponse.json(status);
     return setCorsHeaders(response);
   } catch (error) {
-    console.error('Error checking job status:', error);
+    console.error('Error getting job status:', error);
     const response = NextResponse.json(
-      { error: 'Failed to check job status', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to get job status', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
     return setCorsHeaders(response);
@@ -132,6 +208,5 @@ export async function GET(req: NextRequest) {
 
 // This function would be implemented in the queue manager
 async function getJobStatus(jobId: string) {
-  // Placeholder - actual implementation would retrieve status from Bull queue
-  return { id: jobId, status: 'pending' };
+  return null;
 }

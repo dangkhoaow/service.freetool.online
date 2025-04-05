@@ -1,0 +1,220 @@
+{
+  "f1f108be-8650-4f1f-b391-54779c03c185": {
+    "jobId": "f1f108be-8650-4f1f-b391-54779c03c185",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743867881761,
+        "path": "uploads/temp/sample1.heic",
+        "convertedName": "sample1.jpg",
+        "status": "completed"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "completed",
+    "completedAt": "2025-04-05T15:44:42.559Z"
+  },
+  "edc73f3b-1767-4a7c-bb45-756932014762": {
+    "jobId": "edc73f3b-1767-4a7c-bb45-756932014762",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743868136313,
+        "path": "uploads/temp/sample1.heic",
+        "convertedName": "sample1.jpg",
+        "status": "completed"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "completed",
+    "completedAt": "2025-04-05T15:48:57.074Z"
+  },
+  "08aa433c-86cd-4a2e-a3d0-316eb73dab00": {
+    "jobId": "08aa433c-86cd-4a2e-a3d0-316eb73dab00",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743868771166,
+        "path": "uploads/temp/sample1.heic",
+        "convertedName": "sample1.jpg",
+        "status": "completed"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "completed",
+    "completedAt": "2025-04-05T15:59:31.983Z"
+  },
+  "644ef6a4-16d9-45d4-bf8f-05cd844e2424": {
+    "jobId": "644ef6a4-16d9-45d4-bf8f-05cd844e2424",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743869415085,
+        "path": "uploads/temp/sample1.heic",
+        "convertedName": "sample1.jpg",
+        "status": "completed"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "completed",
+    "completedAt": "2025-04-05T16:10:15.834Z"
+  },
+  "5401afe0-c4f7-43ab-8468-98e89ab557fc": {
+    "jobId": "5401afe0-c4f7-43ab-8468-98e89ab557fc",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743869673293,
+        "path": "uploads/temp/sample1.heic",
+        "convertedName": "sample1.jpg",
+        "status": "completed"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "completed",
+    "completedAt": "2025-04-05T16:14:34.177Z"
+  },
+  "f372ace4-78be-443f-b0d7-b87a7f1202c7": {
+    "jobId": "f372ace4-78be-443f-b0d7-b87a7f1202c7",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "IMG_7389.HEIC",
+        "size": 1380733,
+        "type": "image/heic",
+        "lastModified": 1743870946619,
+        "path": "uploads/temp/IMG_7389.HEIC",
+        "convertedName": "IMG_7389.jpg",
+        "status": "completed"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "completed",
+    "completedAt": "2025-04-05T16:35:47.688Z"
+  },
+  "be1ef31f-fb06-4a78-ab23-e01d8e117699": {
+    "jobId": "be1ef31f-fb06-4a78-ab23-e01d8e117699",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743871452714,
+        "path": "uploads/temp/sample1.heic",
+        "convertedName": "sample1.jpg",
+        "status": "completed"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "completed",
+    "completedAt": "2025-04-05T16:44:13.454Z"
+  },
+  "142db13b-8941-4dee-8cdc-9726b61c71fd": {
+    "jobId": "142db13b-8941-4dee-8cdc-9726b61c71fd",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743871716405,
+        "path": "uploads/temp/sample1.heic"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "failed",
+    "error": "Cannot find module './conversion/heic-converter'"
+  },
+  "8e7c7382-5a9f-4efb-b22d-4efd163ac2cf": {
+    "jobId": "8e7c7382-5a9f-4efb-b22d-4efd163ac2cf",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743871804834,
+        "path": "uploads/temp/sample1.heic"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "failed",
+    "error": "Cannot find module './conversion/heic-converter'"
+  },
+  "9d7b1b6e-ec59-4f2a-ac97-7781037c2878": {
+    "jobId": "9d7b1b6e-ec59-4f2a-ac97-7781037c2878",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743871936825,
+        "path": "uploads/temp/sample1.heic",
+        "convertedPath": "http://localhost:3001/api/files/converted%2Fjob-9d7b1b6e-ec59-4f2a-ac97-7781037c2878%2Fsample1.jpg",
+        "thumbnailUrl": "http://localhost:3001/api/files/converted%2Fjob-9d7b1b6e-ec59-4f2a-ac97-7781037c2878%2Fthumbnails%2Fsample1.jpg",
+        "convertedName": "sample1.jpg",
+        "status": "completed"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "completed",
+    "completedAt": "2025-04-05T16:52:17.726Z"
+  },
+  "4adc8071-ffa9-451d-bb3b-89c0039ab9d2": {
+    "jobId": "4adc8071-ffa9-451d-bb3b-89c0039ab9d2",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743872044760,
+        "path": "uploads/temp/sample1.heic",
+        "convertedPath": "http://localhost:3001/api/files/converted%2Fjob-4adc8071-ffa9-451d-bb3b-89c0039ab9d2%2Fsample1.jpg",
+        "thumbnailUrl": "http://localhost:3001/api/files/converted%2Fjob-4adc8071-ffa9-451d-bb3b-89c0039ab9d2%2Fthumbnails%2Fsample1.jpg",
+        "convertedName": "sample1.jpg",
+        "status": "completed"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "completed",
+    "completedAt": "2025-04-05T16:54:05.731Z"
+  },
+  "c6160225-fd99-45bd-ae24-3d052391a0b8": {
+    "jobId": "c6160225-fd99-45bd-ae24-3d052391a0b8",
+    "userId": "2076060a-eb02-4712-a60c-a29e896670b7",
+    "files": [
+      {
+        "name": "sample1.heic",
+        "size": 293608,
+        "type": "image/heic",
+        "lastModified": 1743872243883,
+        "path": "uploads/temp/sample1.heic",
+        "convertedPath": "http://localhost:3001/api/files/converted%2Fjob-c6160225-fd99-45bd-ae24-3d052391a0b8%2Fsample1.jpg",
+        "thumbnailUrl": "http://localhost:3001/api/files/converted%2Fjob-c6160225-fd99-45bd-ae24-3d052391a0b8%2Fthumbnails%2Fsample1.jpg",
+        "convertedName": "sample1.jpg",
+        "status": "completed"
+      }
+    ],
+    "outputFormat": "jpg",
+    "status": "completed",
+    "completedAt": "2025-04-05T16:57:24.838Z"
+  }
+}

@@ -56,13 +56,14 @@ export async function processHeicConversion(
   outputFormat: string,
   quality: number,
   pdfOptions: { pageSize: string; orientation: string },
-  progressCallback?: ProgressCallback
+  progressCallback?: ProgressCallback,
+  jobId?: string
 ): Promise<ConversionResult> {
   console.log(`[HEIC] Starting HEIC conversion of ${files.length} files to ${outputFormat} format`);
   
-  // Create a fixed output directory path that's easier to find
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const outputDir = path.join(process.cwd(), 'uploads', 'converted', `job-${timestamp}`);
+  // Create a fixed output directory path using job UUID
+  const jobUuid = jobId || uuidv4();
+  const outputDir = path.join(process.cwd(), 'uploads', 'converted', `job-${jobUuid}`);
   console.log(`[HEIC] Creating output directory: ${outputDir}`);
   
   // Ensure the directory exists
@@ -268,7 +269,7 @@ export async function processHeicConversion(
           console.log(`[HEIC] Generating placeholder in ${outputFormat} format`);
           await generateColoredImage(
             800, 600, 
-            { r: 100, g: 100, b: 200 },
+            { r: 100, g: 100, b: 200 }, // Blue for placeholder
             outputFormat, 
             quality,
             finalOutputPath

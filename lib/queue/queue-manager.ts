@@ -2,38 +2,142 @@
 import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
 
-// Simulated in-memory job storage
-// Use global variables to ensure the same storage is used across imports
-// @ts-ignore
-global.heicConverterJobs = global.heicConverterJobs || new Map<string, any>();
-// @ts-ignore
-global.heicConverterSubscribers = global.heicConverterSubscribers || new Map<string, Set<(data: any) => void>>();
-// @ts-ignore
-global.heicConverterEvents = global.heicConverterEvents || new EventEmitter();
-
-// References to the global storage
-const jobs = global.heicConverterJobs;
-const subscribers = global.heicConverterSubscribers;
-const jobEvents = global.heicConverterEvents;
+// Single instance of job storage
+let jobs: ConversionJob[] = [];
+const completedJobs: Map<string, JobStatus> = new Map();
+const jobProgress: Map<string, number> = new Map();
+const subscribers = new Map<string, Set<(data: any) => void>>();
+const jobEvents = new EventEmitter();
 
 // For debugging
-console.log('Queue manager initialized. Current jobs:', jobs.size);
+console.log('Queue manager initialized. Current jobs:', jobs.length);
+
+// Create the persistent storage files
+const DATA_DIR = path.join(process.cwd(), 'data');
+const COMPLETED_JOBS_FILE = path.join(DATA_DIR, 'completed-jobs.json');
+const JOBS_FILE = path.join(DATA_DIR, 'jobs.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// Load completed jobs from disk
+function loadCompletedJobsFromDisk() {
+  try {
+    if (fs.existsSync(COMPLETED_JOBS_FILE)) {
+      const data = fs.readFileSync(COMPLETED_JOBS_FILE, 'utf8');
+      const jobsObj = JSON.parse(data);
+      const loadedJobs = new Map<string, JobStatus>();
+      
+      Object.entries(jobsObj).forEach(([key, value]) => {
+        loadedJobs.set(key, value as JobStatus);
+      });
+      
+      console.log(`Loaded ${loadedJobs.size} completed jobs from disk`);
+      return loadedJobs;
+    }
+  } catch (error) {
+    console.error('Error loading completed jobs from disk:', error);
+  }
+  return new Map<string, JobStatus>();
+}
+
+// Save completed jobs to disk
+function saveCompletedJobsToDisk() {
+  try {
+    const jobsObj = Object.fromEntries(completedJobs);
+    fs.writeFileSync(COMPLETED_JOBS_FILE, JSON.stringify(jobsObj, null, 2));
+    console.log(`Saved ${completedJobs.size} completed jobs to disk`);
+  } catch (error) {
+    console.error('Error saving completed jobs to disk:', error);
+  }
+}
+
+// Load jobs from disk
+function loadJobsFromDisk() {
+  try {
+    if (fs.existsSync(JOBS_FILE)) {
+      const data = fs.readFileSync(JOBS_FILE, 'utf8');
+      const jobsObj = JSON.parse(data);
+      return jobsObj as ConversionJob[];
+    }
+  } catch (error) {
+    console.error('Error loading jobs from disk:', error);
+  }
+  return [];
+}
+
+// Save jobs to disk
+function saveJobsToDisk() {
+  try {
+    const jobsObj = jobs;
+    fs.writeFileSync(JOBS_FILE, JSON.stringify(jobsObj, null, 2));
+    console.log(`Saved ${jobs.length} jobs to disk`);
+  } catch (error) {
+    console.error('Error saving jobs to disk:', error);
+  }
+}
+
+// Initialize with data from disk
+jobs = loadJobsFromDisk();
+const loadedCompletedJobs = loadCompletedJobsFromDisk();
+completedJobs.forEach((value, key) => loadedCompletedJobs.set(key, value));
+completedJobs.clear();
+loadedCompletedJobs.forEach((value, key) => completedJobs.set(key, value));
 
 // Job types
 export interface ConversionJob {
   jobId: string;
   userId: string;
-  files: any[];
+  files: Array<{
+    name: string;
+    size: number;
+    type: string;
+    path: string;
+    convertedPath?: string;
+    thumbnailUrl?: string;
+    convertedName?: string;
+    status?: 'processing' | 'completed' | 'failed';
+  }>;
   outputFormat: string;
   quality: number;
-  pdfOptions: any;
-  priority: number;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  progress: number;
-  error?: string;
-  createdAt: Date;
+  pdfOptions?: {
+    pageSize: string;
+    orientation: string;
+  };
+  status?: 'processing' | 'completed' | 'failed';
+  progress?: number;
+  createdAt?: Date;
   completedAt?: Date;
+  error?: string;
+  zipUrl?: string;
+  combinedPdfUrl?: string;
+}
+
+interface JobStatus {
+  jobId: string;
+  userId: string;
+  files: Array<{
+    name: string;
+    size: number;
+    type: string;
+    path: string;
+    convertedPath?: string;
+    thumbnailUrl?: string;
+    convertedName?: string;
+    status?: 'processing' | 'completed' | 'failed';
+  }>;
+  outputFormat: string;
+  status: 'processing' | 'completed' | 'failed';
+  completedAt?: Date;
+  error?: string;
+  progress?: number;
+  zipUrl?: string;
+  combinedPdfUrl?: string;
 }
 
 // Add a new conversion job
@@ -48,190 +152,107 @@ export async function addJob(jobData: any): Promise<string> {
   };
   
   // Store job in memory
-  jobs.set(jobId, job);
-  console.log(`Queue manager - Added job ${jobId}. Total jobs:`, jobs.size);
+  jobs.push(job);
+  console.log(`Queue manager - Added job ${jobId}. Total jobs:`, jobs.length);
+  saveJobsToDisk();
   
   // For testing purposes, immediately process the job
-  setTimeout(() => processJob(jobId), 500);
+  setTimeout(() => processJob(job), 500);
   
   return jobId;
 }
 
 // Process a job (simulated)
-async function processJob(jobId: string): Promise<void> {
-  console.log(`Starting job processing for job ID: ${jobId}`);
-  const job = jobs.get(jobId);
-  if (!job) {
-    console.log(`Job ${jobId} not found`);
-    return;
-  }
-  
-  // Update job status to processing
-  job.status = 'processing';
-  job.progress = 0;
-  notifyJobUpdate(job);
-  
-  // Clear module cache to ensure we get the latest version
-  Object.keys(require.cache).forEach(key => {
-    if (key.includes('heic-converter')) {
-      delete require.cache[key];
-    }
+async function processJob(job: ConversionJob): Promise<void> {
+  console.log('=== Starting job processing for job ID:', job.jobId);
+  console.log('Processing job', job.jobId, 'with', job.files.length, 'files');
+  console.log('Job details:', {
+    jobId: job.jobId,
+    userId: job.userId,
+    files: job.files,
+    outputFormat: job.outputFormat,
+    quality: job.quality
   });
-  
-  // Import the real HEIC converter
-  const { processHeicConversion } = require('../conversion/heic-converter');
-  const fs = require('fs').promises;
-  const path = require('path');
-  const fsSync = require('fs');
-  
+
   try {
-    console.log(`Processing job ${jobId} with ${job.files.length} files`);
-    // Prepare the files array in the format expected by the converter
-    const files = [];
+    // Update job status to processing
+    job.status = 'processing';
+    job.progress = 0;
+    notifyJobUpdate(job);
     
-    // Check if these are mock files or real upload files
-    if (job.files[0].path) {
-      // Real uploaded files
-      files.push(...job.files);
-    } else {
-      // These are mock files, so we need to create some test HEIC files
-      console.log('Creating mock HEIC files for testing');
-      
-      // Create a temporary directory for mock files
-      const tempDir = path.join(__dirname, '../../uploads/temp');
-      
-      // Check if we have any sample HEIC files
-      const sampleHeicDir = path.join(__dirname, '../../sample-heic');
-      let heicFiles = [];
-      
-      if (fsSync.existsSync(sampleHeicDir)) {
-        heicFiles = fsSync.readdirSync(sampleHeicDir)
-          .filter(f => f.toLowerCase().endsWith('.heic'))
-          .map(f => path.join(sampleHeicDir, f));
-      }
-      
-      if (heicFiles.length > 0) {
-        // Use sample HEIC files
-        for (let i = 0; i < job.files.length; i++) {
-          const mockFilePath = path.join(tempDir, `mock-${job.jobId}-${i}.heic`);
-          const heicContent = await fs.readFile(heicFiles[i % heicFiles.length]);
-          await fs.writeFile(mockFilePath, heicContent);
-          
-          files.push({
-            path: mockFilePath,
-            name: job.files[i].originalName || `test-${i}.heic`,
-            size: heicContent.length,
-            type: 'image/heic'
-          });
-        }
-      } else {
-        // No sample HEIC files, create default test files
-        const gradientImageData = generateGradientJpeg();
-        
-        for (let i = 0; i < job.files.length; i++) {
-          const mockFilePath = path.join(tempDir, `mock-${job.jobId}-${i}.jpg`);
-          await fs.writeFile(mockFilePath, gradientImageData);
-          
-          files.push({
-            path: mockFilePath,
-            name: job.files[i].originalName || `test-${i}.heic`,
-            size: gradientImageData.length,
-            type: 'image/jpeg'
-          });
-        }
-      }
-    }
+    // Clear module cache to ensure we get the latest version
+    delete require.cache[require.resolve('../conversion/heic-converter')];
     
-    // Use the actual converter to process the HEIC files
-    const convertedFiles = await processHeicConversion(
-      files,
-      job.outputFormat || 'jpg',
-      job.quality || 80,
+    // Import the converter
+    const { processHeicConversion } = require('../conversion/heic-converter');
+    
+    // Process the files with the job ID
+    const conversionResult = await processHeicConversion(
+      job.files,
+      job.outputFormat,
+      job.quality,
       job.pdfOptions || { pageSize: 'a4', orientation: 'portrait' },
-      async (progress) => {
-        // Update job progress during conversion
-        job.progress = progress.percentage || Math.round((progress.fileIndex / progress.totalFiles) * 100);
-        console.log(`Job ${job.jobId} progress: ${job.progress}%`);
+      (progress) => {
+        job.progress = progress.percentage;
         notifyJobUpdate(job);
-      }
+        return Promise.resolve();
+      },
+      job.jobId  // Pass the job ID to the converter
     );
     
-    // Update job with results
-    for (let i = 0; i < convertedFiles.files.length; i++) {
-      const convertedFile = convertedFiles.files[i];
-      const originalFile = job.files[i];
-      
-      // Map the converted file info back to the job
-      originalFile.convertedName = convertedFile.convertedName;
-      originalFile.convertedPath = convertedFile.url.replace(/^.*\/api\/files\//, '');
-      originalFile.size = convertedFile.size;
-      originalFile.status = 'completed';
-    }
-    
-    // Add ZIP file info if available
-    if (convertedFiles.zipUrl) {
-      job.zipUrl = convertedFiles.zipUrl;
-    }
-    
-  } catch (error) {
-    console.error('Error processing HEIC conversion:', error);
-    
-    // Fallback to generating mock files if conversion fails
-    console.log(`Using fallback for job ${jobId}`);
-    // Process each file using the mock method
-    const totalSteps = job.files.length;
-    let currentStep = 0;
-    
-    for (let i = 0; i < job.files.length; i++) {
-      // Update progress
-      currentStep++;
-      job.progress = Math.round((currentStep / totalSteps) * 100);
-      notifyJobUpdate(job);
-      
-      // Get file details
-      const fileObj = job.files[i];
-      const originalName = fileObj.name || fileObj.originalName;
-      const fileBaseName = originalName.replace(/\.[^/.]+$/, '');
-      const convertedName = `${fileBaseName}.${job.outputFormat}`;
-      const filePath = `temp/${job.jobId}-${i}-${convertedName}`;
-      
-      // Create a mock converted file as fallback
-      try {
-        const fullPath = path.join(__dirname, '../../uploads', filePath);
-        await fs.mkdir(path.dirname(fullPath), { recursive: true });
-        
-        // Generate a gradient image as a fallback
-        const gradientImageData = generateGradientJpeg();
-        await fs.writeFile(fullPath, gradientImageData);
-        console.log(`Created fallback image at ${fullPath}`);
-        
-        // Update file information
-        fileObj.convertedName = convertedName;
-        fileObj.convertedPath = filePath;
-        fileObj.size = gradientImageData.length;
-        fileObj.status = 'completed';
-      } catch (err) {
-        console.error('Error creating fallback image file:', err);
-        fileObj.status = 'failed';
-        fileObj.error = err.message;
-      }
-    }
-  } finally {
-    // Mark job as completed regardless of success or failure
-    console.log(`Finalizing job ${jobId}`);
+    // Update job status to completed
     job.status = 'completed';
     job.progress = 100;
     job.completedAt = new Date();
-    notifyJobUpdate(job);
     
-    jobEvents.emit(`job.completed.${jobId}`, {
-      jobId, 
+    // Update file paths in job status
+    job.files = job.files.map((file, index) => ({
+      ...file,
+      convertedPath: conversionResult.files[index].url,
+      thumbnailUrl: conversionResult.files[index].thumbnailUrl,
+      convertedName: conversionResult.files[index].convertedName,
+      status: 'completed'
+    }));
+    
+    // Save to completed jobs
+    completedJobs.set(job.jobId, {
+      jobId: job.jobId,
+      userId: job.userId,
+      files: job.files,
+      outputFormat: job.outputFormat,
       status: 'completed',
-      progress: 100,
-      files: job.files
+      completedAt: job.completedAt
     });
+    saveCompletedJobsToDisk();
     
-    console.log(`Job ${jobId} completed with files:`, job.files);
+    // Remove from queue
+    jobs = jobs.filter(j => j.jobId !== job.jobId);
+    saveJobsToDisk();
+    
+    // Notify subscribers
+    notifyJobUpdate(job);
+  } catch (error: any) {
+    console.error('Error during HEIC conversion:', error);
+    
+    const failedJob: JobStatus = {
+      jobId: job.jobId,
+      userId: job.userId,
+      files: job.files,
+      outputFormat: job.outputFormat,
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Conversion failed'
+    };
+    
+    console.error('Job failed:', failedJob);
+    completedJobs.set(job.jobId, failedJob); // Save failed jobs too
+    saveCompletedJobsToDisk(); // Save to disk
+    
+    // Remove from queue
+    jobs = jobs.filter(j => j.jobId !== job.jobId);
+    saveJobsToDisk(); // Save to disk
+    
+    // Notify subscribers
+    notifyJobUpdate(job);
   }
 }
 
@@ -247,6 +268,7 @@ function generateGradientJpeg() {
     0x22, 0x2c, 0x23, 0x1c, 0x1c, 0x28, 0x37, 0x29, 0x2c, 0x30, 0x31, 0x34, 0x34, 0x34, 0x1f, 0x27, 
     0x39, 0x3d, 0x38, 0x32, 0x3c, 0x2e, 0x33, 0x34, 0x32, 0xff, 0xdb, 0x00, 0x43, 0x01, 0x09, 0x09, 
     0x09, 0x0c, 0x0b, 0x0c, 0x18, 0x0d, 0x0d, 0x18, 0x32, 0x21, 0x1c, 0x21, 0x32, 0x32, 0x32, 0x32, 
+    0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 
     0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 
     0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 
     0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0x32, 0xff, 0xc0, 
@@ -299,13 +321,33 @@ function generateGradientJpeg() {
 }
 
 // Get job status
-export function getJobStatus(jobId: string) {
-  if (!jobId) {
-    console.log('No job ID provided to getJobStatus');
-    return null;
+export async function getJobStatus(jobId: string): Promise<JobStatus | null> {
+  console.log('=== Queue manager - Getting job status ===');
+  console.log('Job ID:', jobId);
+  console.log('Current jobs:', jobs);
+  
+  // First check active jobs
+  const job = jobs.find(j => j.jobId === jobId);
+  if (job) {
+    return {
+      jobId: job.jobId,
+      userId: job.userId,
+      files: job.files,
+      outputFormat: job.outputFormat,
+      status: 'processing',
+      progress: jobProgress.get(jobId) || 0
+    };
   }
-  console.log(`Queue manager - Fetching job ${jobId}. Available jobs:`, Array.from(jobs.keys()));
-  return jobs.get(jobId) || null;
+  
+  // If not in active jobs, check completed jobs
+  const completedJob = completedJobs.get(jobId);
+  if (completedJob) {
+    console.log(`Found completed job: ${jobId}`, completedJob);
+    return completedJob;
+  }
+  
+  console.log(`Job ${jobId} not found in queue or completed jobs. Available jobs:`, jobs);
+  return null;
 }
 
 // Subscribe to job progress updates
@@ -342,16 +384,16 @@ function notifyJobUpdate(job: any): void {
     });
   }
   
-  jobEvents.emit(`job.progress.${job.jobId}`, { jobId: job.jobId, progress: job.progress });
+  jobEvents.emit(`job.progress.${job.jobId}`, { jobId: job.jobId, progress: jobProgress.get(job.jobId) || 0 });
 }
 
 // Get queue statistics (mock implementation)
 export async function getQueueStats() {
   return {
-    waiting: jobs.size,
-    active: Array.from(jobs.values()).filter(job => (job as ConversionJob).status === 'processing').length,
-    completed: Array.from(jobs.values()).filter(job => (job as ConversionJob).status === 'completed').length,
-    failed: Array.from(jobs.values()).filter(job => (job as ConversionJob).status === 'failed').length
+    waiting: jobs.length,
+    active: jobs.filter(job => job.status === 'processing').length,
+    completed: Array.from(completedJobs.values()).filter(job => job.status === 'completed').length,
+    failed: Array.from(completedJobs.values()).filter(job => job.status === 'failed').length
   };
 }
 
@@ -379,3 +421,6 @@ export async function getCompletedJobsCount() {
 export async function getFailedJobsCount() {
   return (await getQueueStats()).failed;
 }
+
+// Export jobs for debugging
+export { jobs };
